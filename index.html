@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Task Tracker</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <style>
+        .tasks {
+            min-height: 30vh;
+            background: #eee;
+            border: 1px solid #ccc;
+        }
+
+        .tasks ul {
+            height: 100%;
+        }
+    </style>
+    <script>
+        class TaskMaster {
+            constructor() {
+                this.task_areas = document.getElementsByClassName("tasks");
+                this.setDragNDrop();
+            }
+
+            getMainColumn() {
+                return this.task_areas[0].getElementsByTagName("ul")[0];
+            }
+
+            setDragNDrop() {
+                for (let i = 0; i < this.task_areas.length; i++) {
+                    this.task_areas[i].ondragover = (event) => { this.allowDrop(event); };
+                    this.task_areas[i].ondrop = (event) => { this.dragDrop(event); };
+
+                    let tasks = this.task_areas[i].getElementsByTagName("li");
+                    for (let j = 0; j < tasks.length; j++) {
+                        new TaskItem(tasks[j]);
+                    }
+                }
+            }
+
+            dragDrop(event) {
+                event.preventDefault();
+                let task_id = event.dataTransfer.getData("task_item_id");
+                let task = document.getElementById(task_id);
+                let target = event.target.tagName === "LI" ? event.target.parentElement : event.target;
+                target.appendChild(task);
+                task.id = null;
+            }
+
+            allowDrop(event) {
+                event.preventDefault();
+            }
+        }
+
+        class TaskItem {
+            constructor(obj) {
+                this.object = obj;
+                this.object.draggable = true;
+                this.object.ondragstart = (event) => { this.dragStart(event); };
+                this.setDeleteButtonHandler();
+            }
+
+            static create(title) {
+                let block_title = document.createElement("div");
+                block_title.classList.add("col-9");
+                block_title.innerText = title;
+                let button = document.createElement("button");
+                button.classList.add("btn", "btn-sm", "btn-outline-danger");
+                button.innerHTML = "<i class=\"fa fa-trash\">";
+                let block_button = document.createElement("div");
+                block_button.classList.add("col-3", "btn-group");
+                block_button.appendChild(button);
+                let block_row = document.createElement("div");
+                block_row.classList.add("row", "align-items-center");
+                block_row.append(block_title, block_button);
+                let li = document.createElement("li");
+                li.classList.add("list-group-item");
+                li.appendChild(block_row);
+
+                return new TaskItem(li);
+            }
+
+            dragStart(event) {
+                event.target.id = "dragged-task-" + Math.random().toString();
+                event.dataTransfer.setData("task_item_id", event.target.id);
+            }
+
+            setDeleteButtonHandler() {
+                let btn = this.object.getElementsByTagName("button")[0];
+                btn.onclick = () => { this.object.remove(); }
+            }
+        }
+
+        class TaskCreator {
+            constructor(task_master) {
+                this.task_master = task_master;
+                this.input = document.getElementById("tasks-input");
+                this.button = document.getElementById("tasks-btn");
+                this.addInputValidation();
+                this.addCreateTaskButtonHandler()
+            }
+
+            addInputValidation() {
+                this.input.oninput = () => { this.button.disabled = this.input.value.length === 0; }
+            }
+
+            addCreateTaskButtonHandler() {
+                this.button.onclick = () => {
+                    let task = TaskItem.create(this.input.value);
+                    this.task_master.getMainColumn().append(task.object);
+                    this.input.value = "";
+                    this.button.disabled = true;
+                };
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let task_master = new TaskMaster();
+            let task_creator = new TaskCreator(task_master);
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="text-center mb-5"><h1>Task Tracker</h1></div>
+    <div class="row text-center mb-1">
+        <div class="col-4">Plan</div>
+        <div class="col-4">On going</div>
+        <div class="col-4">Finished</div>
+    </div>
+    <div class="row mb-1">
+        <div class="col-4 tasks">
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-9">Task 1</div>
+                        <div class="col-3 btn-group">
+                            <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                        </div>
+                    </div>
+                </li>
+                <li class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-9">Task 2</div>
+                        <div class="col-3 btn-group">
+                            <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                        </div>
+                    </div>
+                </li>
+                <li class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-9">Task 3</div>
+                        <div class="col-3 btn-group">
+                            <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="col-4 tasks"><ul class="list-group"></ul></div>
+        <div class="col-4 tasks"><ul class="list-group"></ul></div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-12 input-group mb-3">
+            <div class="input-group-prepend">
+                <button type="button" class="btn btn-primary" id="tasks-btn" disabled>Add task</button>
+            </div>
+            <input type="text" class="form-control" id="tasks-input" placeholder="New Task">
+        </div>
+    </div>
+</div>
+</body>
+</html>
